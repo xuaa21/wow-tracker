@@ -1,0 +1,1452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="WOW打卡">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#FFD600">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FFD600'/><text y='.9em' font-size='80' x='10'>🌟</text></svg>">
+<title>WOW! English Yellow 打卡计划</title>
+<style>
+  :root {
+    --yellow: #FFD600;
+    --yellow-light: #FFF9C4;
+    --yellow-dark: #F9A825;
+    --green: #4CAF50;
+    --green-light: #E8F5E9;
+    --blue: #2196F3;
+    --blue-light: #E3F2FD;
+    --orange: #FF9800;
+    --red: #F44336;
+    --gray: #9E9E9E;
+    --gray-light: #F5F5F5;
+    --text: #3D2B1F;
+    --text-secondary: #8D6E63;
+    --card-shadow: 0 3px 12px rgba(93,64,55,0.10);
+    --radius: 16px;
+    /* 家庭主题色 */
+    --family-bg: #FFF8F0;
+    --dad-color: #5C7A9E;
+    --mom-color: #E07B8A;
+    --kid-color: #F9A825;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html { height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+    background: var(--family-bg);
+    color: var(--text);
+    min-height: 100vh;
+    min-height: -webkit-fill-available;
+    padding-bottom: calc(70px + env(safe-area-inset-bottom));
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    background: linear-gradient(160deg, #FFD600 0%, #FFAB00 60%, #FF8F00 100%);
+    padding: calc(env(safe-area-inset-top) + 12px) 16px 0;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: 0 3px 12px rgba(255,140,0,0.25);
+    overflow: hidden;
+  }
+  .header::before {
+    content: ''; position: absolute; top: -30px; right: 110px;
+    width: 90px; height: 90px; border-radius: 50%;
+    background: rgba(255,255,255,0.10); pointer-events: none;
+  }
+  .header-content {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    position: relative; z-index: 2;
+  }
+  .header-left { padding-bottom: 12px; flex: 1; min-width: 0; }
+  .header-title {
+    font-size: 20px; font-weight: 800; color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,0.18);
+    letter-spacing: -0.3px;
+  }
+  .header-sub { font-size: 11px; color: rgba(255,255,255,0.88); margin-top: 3px; }
+  .streak-badge {
+    background: rgba(255,255,255,0.28);
+    border-radius: 20px; padding: 5px 12px;
+    font-size: 13px; font-weight: 700; color: #fff;
+    display: inline-flex; align-items: center; gap: 4px;
+    backdrop-filter: blur(4px);
+    margin-top: 8px;
+  }
+  /* 家庭人物区域 — 右侧底部对齐 */
+  .header-family {
+    display: flex; align-items: flex-end;
+    flex-shrink: 0; margin-right: -8px;
+  }
+  .header-family svg { filter: drop-shadow(0 3px 6px rgba(0,0,0,0.18)); display: block; }
+  /* 隐藏照片相关元素 */
+  .header-bg, .header-photo, .header-dots { display: none; }
+
+  /* ===== Pages ===== */
+  .page { display: none; padding: 14px 14px 0; }
+  .page.active { display: block; }
+
+  /* ===== Today Hero Card ===== */
+  .today-hero {
+    background: linear-gradient(135deg, #fff 0%, #FFF9F0 100%);
+    border-radius: var(--radius); box-shadow: var(--card-shadow);
+    padding: 16px; margin-bottom: 14px;
+    border: 1.5px solid rgba(255,171,0,0.2);
+    position: relative; overflow: hidden;
+  }
+  .today-hero::before {
+    content: ''; position: absolute; top: -20px; right: -20px;
+    width: 80px; height: 80px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,214,0,0.15) 0%, transparent 70%);
+  }
+  .today-card {
+    background: #fff; border-radius: var(--radius);
+    box-shadow: var(--card-shadow); padding: 16px; margin-bottom: 14px;
+    border: 1.5px solid rgba(0,0,0,0.04);
+  }
+  .today-card .date-label {
+    font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;
+    display: flex; align-items: center; gap: 5px;
+  }
+  .today-card .today-title {
+    font-size: 16px; font-weight: 700; margin-bottom: 14px;
+    display: flex; align-items: center; gap: 8px; color: var(--text);
+  }
+  .today-card .today-title .icon { font-size: 20px; }
+
+  /* ===== Episode List ===== */
+  .episode-list { display: flex; flex-direction: column; gap: 10px; }
+  .episode-item {
+    border-radius: 14px; padding: 13px 14px;
+    display: flex; align-items: center; gap: 12px;
+    border: 1.5px solid #eee; background: #fafafa;
+    transition: all 0.15s; min-height: 66px;
+  }
+  .episode-item.new-ep {
+    border-color: #FFD600; background: linear-gradient(135deg, #FFFDE7, #FFF8E1);
+    box-shadow: 0 2px 8px rgba(255,214,0,0.2);
+  }
+  .episode-item.review-ep {
+    border-color: #A5D6A7; background: linear-gradient(135deg, #F1F8E9, #E8F5E9);
+  }
+  .episode-item.done { opacity: 0.5; }
+  .ep-num {
+    width: 34px; height: 34px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 800; flex-shrink: 0;
+  }
+  .new-ep .ep-num { background: linear-gradient(135deg, #FFD600, #FFAB00); color: #5D4037; box-shadow: 0 2px 6px rgba(255,171,0,0.4); }
+  .review-ep .ep-num { background: linear-gradient(135deg, #81C784, #4CAF50); color: #fff; box-shadow: 0 2px 6px rgba(76,175,80,0.3); }
+  .ep-info { flex: 1; min-width: 0; }
+  .ep-title { font-size: 14px; font-weight: 600; color: var(--text); line-height: 1.35; word-break: break-word; }
+  .ep-meta { font-size: 11px; color: var(--text-secondary); margin-top: 3px; line-height: 1.4; }
+  .ep-tag {
+    font-size: 10px; padding: 2px 8px; border-radius: 10px;
+    font-weight: 700; flex-shrink: 0;
+  }
+  .tag-new { background: #FFD600; color: #5D4037; }
+  .tag-review { background: #C8E6C9; color: #2E7D32; }
+  .tag-r1 { background: #BBDEFB; color: #1565C0; }
+  .tag-r2 { background: #B2EBF2; color: #00695C; }
+  .tag-r3 { background: #F8BBD0; color: #880E4F; }
+
+  /* ===== Check Button ===== */
+  .check-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: 2.5px solid #e0e0e0;
+    background: #fff; cursor: pointer; display: flex; align-items: center;
+    justify-content: center; font-size: 20px; flex-shrink: 0;
+    transition: all 0.15s; touch-action: manipulation;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  }
+  .check-btn.checked {
+    background: linear-gradient(135deg, #66BB6A, #43A047);
+    border-color: #43A047; color: #fff;
+    box-shadow: 0 3px 10px rgba(67,160,71,0.4);
+  }
+  .check-btn:active { transform: scale(0.82); }
+
+  /* ===== No Today ===== */
+  .no-today {
+    text-align: center; padding: 28px 16px; color: var(--text-secondary);
+    font-size: 15px;
+  }
+  .no-today .family-rest {
+    display: flex; justify-content: center; align-items: flex-end;
+    gap: 4px; margin-bottom: 14px;
+  }
+
+  /* ===== Memory Curve Card ===== */
+  .curve-card {
+    background: linear-gradient(135deg, #FFF3E0, #FFF8F0);
+    border-radius: var(--radius); padding: 14px 16px; margin-bottom: 14px;
+    border: 1.5px solid rgba(255,152,0,0.2);
+    box-shadow: var(--card-shadow);
+  }
+  .curve-card-title {
+    font-size: 14px; font-weight: 700; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 6px; color: var(--text);
+  }
+  .curve-steps { display: flex; gap: 6px; }
+  .curve-step {
+    flex: 1; border-radius: 10px; padding: 8px 6px; text-align: center;
+    font-size: 10px; font-weight: 600;
+  }
+  .curve-step .step-num { font-size: 16px; font-weight: 800; display: block; line-height: 1.2; }
+  .curve-step .step-label { font-size: 9px; opacity: 0.8; margin-top: 2px; display: block; }
+  .cs-1 { background: #FFF9C4; color: #F57F17; }
+  .cs-2 { background: #C8E6C9; color: #2E7D32; }
+  .cs-3 { background: #BBDEFB; color: #1565C0; }
+  .cs-4 { background: #F8BBD0; color: #880E4F; }
+
+  /* ===== Progress Summary ===== */
+  .summary-row {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    margin-bottom: 14px;
+  }
+  .summary-card {
+    background: #fff; border-radius: 14px; padding: 14px 8px;
+    text-align: center; box-shadow: var(--card-shadow);
+    border: 1.5px solid rgba(0,0,0,0.04);
+  }
+  .summary-card .s-icon { font-size: 22px; display: block; margin-bottom: 4px; }
+  .summary-card .s-num { font-size: 22px; font-weight: 800; color: #F9A825; line-height: 1; }
+  .summary-card .s-label { font-size: 10px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* ===== Progress Bar ===== */
+  .progress-section { background: #fff; border-radius: var(--radius); padding: 16px; margin-bottom: 14px; box-shadow: var(--card-shadow); }
+  .progress-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .progress-bar-wrap { margin-bottom: 12px; }
+  .progress-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary); margin-bottom: 5px; }
+  .progress-bar { height: 10px; background: #f0ebe5; border-radius: 5px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 5px; background: linear-gradient(90deg, #FFD600, #FF9800); transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+
+  /* ===== Episode Grid ===== */
+  .unit-section { margin-bottom: 18px; }
+  .unit-header {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 14px; background: #fff;
+    border-radius: 12px 12px 0 0; border-bottom: 2.5px solid #FFD600;
+    box-shadow: var(--card-shadow);
+  }
+  .unit-dot { width: 10px; height: 10px; border-radius: 50%; background: linear-gradient(135deg, #FFD600, #FF9800); }
+  .unit-name { font-size: 14px; font-weight: 700; }
+  .unit-en { font-size: 12px; color: var(--text-secondary); }
+  .unit-progress { margin-left: auto; font-size: 12px; color: var(--text-secondary); }
+
+  .ep-grid { background: #fff; border-radius: 0 0 12px 12px; box-shadow: var(--card-shadow); overflow: hidden; }
+  .ep-row {
+    display: flex; align-items: center; padding: 10px 14px;
+    border-bottom: 1px solid #f5f0eb; gap: 10px;
+  }
+  .ep-row:last-child { border-bottom: none; }
+  .ep-row-num { font-size: 12px; color: var(--text-secondary); width: 24px; flex-shrink: 0; }
+  .ep-row-title { flex: 1; font-size: 13px; }
+  .ep-row-title .en { font-weight: 600; }
+  .ep-row-title .zh { font-size: 11px; color: var(--text-secondary); }
+  .ep-row-type { font-size: 10px; padding: 2px 7px; border-radius: 8px; flex-shrink: 0; font-weight: 600; }
+  .type-story { background: #FFF9C4; color: #F57F17; }
+  .type-song { background: #E8F5E9; color: #2E7D32; }
+  .ep-row-watches { display: flex; gap: 4px; flex-shrink: 0; }
+  .watch-dot {
+    width: 14px; height: 14px; border-radius: 50%;
+    border: 1.5px solid #ddd; background: #fff;
+    font-size: 8px; display: flex; align-items: center; justify-content: center;
+  }
+  .watch-dot.done { background: #FFD600; border-color: #FFD600; }
+  .watch-dot.done::after { content: '✓'; color: #5D4037; font-weight: 700; }
+
+  /* ===== Calendar ===== */
+  .calendar-section { background: #fff; border-radius: var(--radius); padding: 16px; margin-bottom: 14px; box-shadow: var(--card-shadow); }
+  .calendar-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+  .cal-day-label { text-align: center; font-size: 11px; color: var(--text-secondary); padding: 4px 0; font-weight: 600; }
+  .cal-day {
+    aspect-ratio: 1; border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; font-size: 12px; cursor: pointer; position: relative;
+  }
+  .cal-day.empty { background: none; }
+  .cal-day.has-checkin { background: linear-gradient(135deg, #FFD600, #FFAB00); font-weight: 700; color: #5D4037; box-shadow: 0 2px 5px rgba(255,171,0,0.3); }
+  .cal-day.today { border: 2px solid #FF9800; font-weight: 700; }
+  .cal-day.future { color: #ccc; }
+  .cal-day.past { background: #f5f0eb; color: #bbb; }
+
+  /* ===== Settings ===== */
+  .settings-section { background: #fff; border-radius: var(--radius); padding: 16px; margin-bottom: 14px; box-shadow: var(--card-shadow); }
+  .settings-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 6px; }
+  .form-row { margin-bottom: 12px; }
+  .form-row label { font-size: 13px; color: var(--text-secondary); display: block; margin-bottom: 5px; font-weight: 500; }
+  .form-row input, .form-row select, .form-row textarea {
+    width: 100%; padding: 12px 14px; border: 1.5px solid #e8e0d8;
+    border-radius: 12px; font-size: 16px; outline: none;
+    transition: border-color 0.2s; background: #FAFAF8;
+    -webkit-appearance: none; color: var(--text);
+  }
+  .form-row input:focus, .form-row select:focus { border-color: #FFD600; background: #fff; }
+  .btn-primary {
+    width: 100%; padding: 15px; background: linear-gradient(135deg, #FFD600, #FFAB00);
+    border: none; border-radius: 14px; font-size: 16px; font-weight: 800;
+    color: #5D4037; cursor: pointer; box-shadow: 0 4px 14px rgba(255,171,0,0.35);
+    transition: all 0.15s; touch-action: manipulation; min-height: 52px;
+    letter-spacing: 0.3px;
+  }
+  .btn-primary:active { transform: scale(0.97); opacity: 0.9; }
+  .btn-danger {
+    padding: 10px 18px; background: #fff; border: 1.5px solid #F44336;
+    border-radius: 10px; font-size: 14px; color: #F44336; cursor: pointer;
+    touch-action: manipulation; min-height: 44px; font-weight: 600;
+  }
+  .btn-danger:active { background: #FFF0F0; }
+
+  /* ===== Bottom Nav ===== */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(255,255,255,0.96); border-top: 1px solid rgba(0,0,0,0.06);
+    display: flex; z-index: 200;
+    box-shadow: 0 -4px 16px rgba(93,64,55,0.10);
+    padding-bottom: env(safe-area-inset-bottom);
+    backdrop-filter: blur(10px);
+  }
+  .nav-btn {
+    flex: 1; padding: 10px 4px 6px; border: none; background: none;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    cursor: pointer; color: #BDBDBD; font-size: 10px;
+    transition: all 0.15s; touch-action: manipulation; min-height: 56px;
+    font-weight: 500;
+  }
+  .nav-btn .nav-icon { font-size: 22px; line-height: 1; transition: transform 0.15s; }
+  .nav-btn.active { color: #F9A825; }
+  .nav-btn.active .nav-icon { transform: scale(1.15); }
+  .nav-btn:active { opacity: 0.6; }
+
+  /* ===== Toast ===== */
+  .toast {
+    position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: rgba(61,43,31,0.85); color: #fff; padding: 10px 22px;
+    border-radius: 22px; font-size: 14px; opacity: 0;
+    transition: all 0.3s; z-index: 999; white-space: nowrap;
+    backdrop-filter: blur(8px);
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ===== Plan Page ===== */
+  .plan-week { margin-bottom: 20px; }
+  .plan-week-title {
+    font-size: 12px; font-weight: 700; color: var(--text-secondary);
+    padding: 6px 4px; margin-bottom: 8px;
+    border-bottom: 1px solid #ede8e3; text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .plan-day-card {
+    background: #fff; border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 8px; box-shadow: var(--card-shadow);
+    display: flex; gap: 12px; align-items: flex-start;
+    border: 1.5px solid transparent;
+  }
+  .plan-day-card.today-plan { border-color: #FFD600; background: linear-gradient(135deg, #fff, #FFFDE7); }
+  .plan-day-card.past-plan { opacity: 0.55; }
+  .plan-date-col { text-align: center; flex-shrink: 0; width: 36px; }
+  .plan-date-num { font-size: 20px; font-weight: 800; color: #F9A825; line-height: 1; }
+  .plan-date-dow { font-size: 10px; color: var(--text-secondary); font-weight: 600; }
+  .plan-eps { flex: 1; }
+  .plan-ep-chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 9px; border-radius: 12px; font-size: 11px;
+    margin: 2px 3px 2px 0; font-weight: 600;
+  }
+  .chip-new { background: #FFF9C4; color: #F57F17; border: 1px solid #FFD600; }
+  .chip-review { background: #E8F5E9; color: #2E7D32; border: 1px solid #A5D6A7; }
+
+  .section-title {
+    font-size: 16px; font-weight: 800; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px; color: var(--text);
+  }
+  .section-title::before {
+    content: ''; width: 4px; height: 18px;
+    background: linear-gradient(180deg, #FFD600, #FF9800);
+    border-radius: 2px; display: inline-block;
+  }
+
+  /* ===== Family Banner (Stats page) ===== */
+  .family-banner {
+    background: linear-gradient(135deg, #FFD600 0%, #FFAB00 100%);
+    border-radius: var(--radius); padding: 16px;
+    margin-bottom: 14px; display: flex; align-items: center;
+    gap: 12px; box-shadow: 0 4px 14px rgba(255,171,0,0.3);
+    overflow: hidden; position: relative;
+  }
+  .family-banner::after {
+    content: ''; position: absolute; right: -10px; bottom: -10px;
+    width: 80px; height: 80px; border-radius: 50%;
+    background: rgba(255,255,255,0.12);
+  }
+  .family-banner-text { flex: 1; }
+  .family-banner-text h3 { font-size: 16px; font-weight: 800; color: #fff; }
+  .family-banner-text p { font-size: 12px; color: rgba(255,255,255,0.85); margin-top: 3px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-content">
+    <div class="header-left">
+      <div class="header-title">✨ WOW! Yellow 打卡</div>
+      <div class="header-sub">Steve &amp; Maggie · 3-4岁英语启蒙</div>
+      <div class="streak-badge" id="streakBadge">🔥 0天</div>
+    </div>
+  </div>
+</div>
+<div class="bottom-nav">
+  <button class="nav-btn active" onclick="switchPage('today')" id="nav-today">
+    <span class="nav-icon">☀️</span>今日
+  </button>
+  <button class="nav-btn" onclick="switchPage('plan')" id="nav-plan">
+    <span class="nav-icon">📅</span>计划
+  </button>
+  <button class="nav-btn" onclick="switchPage('episodes')" id="nav-episodes">
+    <span class="nav-icon">🎬</span>全集
+  </button>
+  <button class="nav-btn" onclick="switchPage('stats')" id="nav-stats">
+    <span class="nav-icon">📊</span>统计
+  </button>
+  <button class="nav-btn" onclick="switchPage('settings')" id="nav-settings">
+    <span class="nav-icon">⚙️</span>设置
+  </button>
+</div>
+
+<!-- ===== TODAY PAGE ===== -->
+<div class="page active" id="page-today">
+  <div class="today-card">
+    <div class="date-label" id="todayDateLabel">📅 今天</div>
+    <div class="today-title">
+      <span class="icon">📺</span>
+      <span>今日观看计划</span>
+    </div>
+    <div class="episode-list" id="todayEpisodeList"></div>
+    <div id="noTodayMsg" class="no-today" style="display:none">
+      <!-- 休息时展示一家三口小图 -->
+      <div class="family-rest">
+        <!-- 迷你爸爸 -->
+        <svg width="36" height="48" viewBox="0 0 58 80" fill="none">
+          <circle cx="29" cy="52" r="13" fill="#FDDBB4"/>
+          <path d="M16 48 Q29 40 42 48 Q40 42 29 41 Q18 42 16 48Z" fill="#2C2C2C"/>
+          <rect x="19" y="50" width="8" height="6" rx="3" fill="none" stroke="#5C4A3A" stroke-width="1.5"/>
+          <rect x="31" y="50" width="8" height="6" rx="3" fill="none" stroke="#5C4A3A" stroke-width="1.5"/>
+          <line x1="27" y1="53" x2="31" y2="53" stroke="#5C4A3A" stroke-width="1.5"/>
+          <circle cx="23" cy="53" r="1.5" fill="#3D2B1F"/>
+          <circle cx="35" cy="53" r="1.5" fill="#3D2B1F"/>
+          <path d="M24 58 Q29 62 34 58" stroke="#C0785A" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <rect x="15" y="64" width="28" height="16" rx="6" fill="#6B8E6B"/>
+        </svg>
+        <!-- 迷你小朋友 -->
+        <svg width="30" height="42" viewBox="0 0 48 60" fill="none">
+          <circle cx="24" cy="16" r="12" fill="#FDDBB4"/>
+          <path d="M12 12 Q24 4 36 12 Q34 6 24 5 Q14 6 12 12Z" fill="#2C2C2C"/>
+          <circle cx="20" cy="15" r="1.8" fill="#3D2B1F"/>
+          <circle cx="28" cy="15" r="1.8" fill="#3D2B1F"/>
+          <path d="M20 20 Q24 24 28 20" stroke="#C0785A" stroke-width="1.2" fill="none" stroke-linecap="round"/>
+          <rect x="14" y="27" width="20" height="14" rx="5" fill="#2C2C2C"/>
+        </svg>
+        <!-- 迷你妈妈 -->
+        <svg width="32" height="44" viewBox="0 0 48 68" fill="none">
+          <circle cx="24" cy="18" r="13" fill="#FDDBB4"/>
+          <path d="M11 14 Q24 4 37 14 Q36 8 24 7 Q12 8 11 14Z" fill="#3D2B1F"/>
+          <rect x="13" y="16" width="8" height="6" rx="3" fill="none" stroke="#5C4A3A" stroke-width="1.5"/>
+          <rect x="27" y="16" width="8" height="6" rx="3" fill="none" stroke="#5C4A3A" stroke-width="1.5"/>
+          <line x1="21" y1="19" x2="27" y2="19" stroke="#5C4A3A" stroke-width="1.5"/>
+          <circle cx="17" cy="19" r="1.5" fill="#3D2B1F"/>
+          <circle cx="31" cy="19" r="1.5" fill="#3D2B1F"/>
+          <path d="M19 24 Q24 28 29 24" stroke="#C0785A" stroke-width="1.3" fill="none" stroke-linecap="round"/>
+          <ellipse cx="14" cy="23" rx="3" ry="2" fill="#FFB3BA" opacity="0.5"/>
+          <ellipse cx="34" cy="23" rx="3" ry="2" fill="#FFB3BA" opacity="0.5"/>
+          <rect x="10" y="30" width="28" height="18" rx="6" fill="#fff"/>
+          <path d="M10 30 L10 48 Q10 48 16 48 L16 30Z" fill="#4A6FA5"/>
+          <path d="M38 30 L38 48 Q38 48 32 48 L32 30Z" fill="#4A6FA5"/>
+        </svg>
+      </div>
+      今天没有安排，好好休息！🎉<br>
+      <small style="color:#bbb;font-size:12px;margin-top:8px;display:block">点击下方「计划」查看近期安排</small>
+    </div>
+  </div>
+
+  <!-- 记忆曲线卡片（重新设计） -->
+  <div class="curve-card">
+    <div class="curve-card-title">🧠 艾宾浩斯记忆曲线</div>
+    <div class="curve-steps">
+      <div class="curve-step cs-1">
+        <span class="step-num">1</span>
+        <span>新内容</span>
+        <span class="step-label">Day 0</span>
+      </div>
+      <div class="curve-step cs-2">
+        <span class="step-num">2</span>
+        <span>复习</span>
+        <span class="step-label">+1天</span>
+      </div>
+      <div class="curve-step cs-3">
+        <span class="step-num">3</span>
+        <span>复习</span>
+        <span class="step-label">+4天</span>
+      </div>
+      <div class="curve-step cs-4">
+        <span class="step-num">4</span>
+        <span>复习</span>
+        <span class="step-label">+11天</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== PLAN PAGE ===== -->
+<div class="page" id="page-plan">
+  <div class="section-title">近14天计划</div>
+  <div id="planContainer"></div>
+</div>
+
+<!-- ===== EPISODES PAGE ===== -->
+<div class="page" id="page-episodes">
+  <div class="section-title">全集进度</div>
+  <div id="episodesContainer"></div>
+</div>
+
+<!-- ===== STATS PAGE ===== -->
+<div class="page" id="page-stats">
+  <!-- 家庭激励Banner -->
+  <div class="family-banner">
+    <div class="family-banner-text">
+      <h3 id="statsBannerTitle">我们的学习旅程 🌟</h3>
+      <p id="statsBannerSub">一起加油，每天进步一点点！</p>
+    </div>
+    <!-- 迷你一家三口 -->
+    <svg width="80" height="56" viewBox="0 0 80 56" fill="none" style="flex-shrink:0;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.15))">
+      <!-- 爸爸 -->
+      <circle cx="22" cy="20" r="10" fill="#FDDBB4"/>
+      <path d="M12 17 Q22 10 32 17 Q30 12 22 11 Q14 12 12 17Z" fill="#2C2C2C"/>
+      <rect x="15" y="18" width="6" height="4" rx="2" fill="none" stroke="#5C4A3A" stroke-width="1.2"/>
+      <rect x="23" y="18" width="6" height="4" rx="2" fill="none" stroke="#5C4A3A" stroke-width="1.2"/>
+      <line x1="21" y1="20" x2="23" y2="20" stroke="#5C4A3A" stroke-width="1.2"/>
+      <path d="M17 25 Q22 28 27 25" stroke="#C0785A" stroke-width="1" fill="none" stroke-linecap="round"/>
+      <rect x="13" y="29" width="18" height="12" rx="4" fill="#6B8E6B"/>
+      <!-- 小朋友 -->
+      <circle cx="40" cy="16" r="9" fill="#FDDBB4"/>
+      <path d="M31 13 Q40 7 49 13 Q47 8 40 7 Q33 8 31 13Z" fill="#2C2C2C"/>
+      <circle cx="37" cy="15" r="1.5" fill="#3D2B1F"/>
+      <circle cx="43" cy="15" r="1.5" fill="#3D2B1F"/>
+      <path d="M37 19 Q40 22 43 19" stroke="#C0785A" stroke-width="1" fill="none" stroke-linecap="round"/>
+      <rect x="32" y="24" width="16" height="12" rx="4" fill="#2C2C2C"/>
+      <line x1="32" y1="27" x2="26" y2="22" stroke="#2C2C2C" stroke-width="3" stroke-linecap="round"/>
+      <line x1="48" y1="27" x2="54" y2="22" stroke="#2C2C2C" stroke-width="3" stroke-linecap="round"/>
+      <!-- 妈妈 -->
+      <circle cx="60" cy="20" r="10" fill="#FDDBB4"/>
+      <path d="M50 17 Q60 10 70 17 Q68 12 60 11 Q52 12 50 17Z" fill="#3D2B1F"/>
+      <rect x="53" y="18" width="6" height="4" rx="2" fill="none" stroke="#5C4A3A" stroke-width="1.2"/>
+      <rect x="61" y="18" width="6" height="4" rx="2" fill="none" stroke="#5C4A3A" stroke-width="1.2"/>
+      <line x1="59" y1="20" x2="61" y2="20" stroke="#5C4A3A" stroke-width="1.2"/>
+      <ellipse cx="52" cy="24" rx="2.5" ry="1.5" fill="#FFB3BA" opacity="0.5"/>
+      <ellipse cx="68" cy="24" rx="2.5" ry="1.5" fill="#FFB3BA" opacity="0.5"/>
+      <path d="M55 25 Q60 28 65 25" stroke="#C0785A" stroke-width="1" fill="none" stroke-linecap="round"/>
+      <rect x="51" y="29" width="18" height="12" rx="4" fill="#fff"/>
+      <path d="M51 29 L51 41 Q51 41 55 41 L55 29Z" fill="#4A6FA5"/>
+      <path d="M69 29 L69 41 Q69 41 65 41 L65 29Z" fill="#4A6FA5"/>
+    </svg>
+  </div>
+  <div class="section-title">学习统计</div>
+  <div class="summary-row" id="summaryRow"></div>
+  <div class="progress-section">
+    <h3>📚 整体进度</h3>
+    <div class="progress-bar-wrap">
+      <div class="progress-label"><span>Yellow 全集完成度</span><span id="overallPct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="overallBar" style="width:0%"></div></div>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-label"><span>已完成4次复习</span><span id="masteredPct">0%</span></div>
+      <div class="progress-bar"><div class="progress-fill" id="masteredBar" style="width:0%;background:linear-gradient(90deg,#81C784,#4CAF50)"></div></div>
+    </div>
+  </div>
+  <div class="calendar-section">
+    <h3>📆 打卡日历</h3>
+    <div class="cal-grid" id="calGrid"></div>
+  </div>
+  <div class="progress-section">
+    <h3>📖 各Unit进度</h3>
+    <div id="unitProgressList"></div>
+  </div>
+</div>
+
+<!-- ===== SETTINGS PAGE ===== -->
+<div class="page" id="page-settings">
+  <div class="settings-section">
+    <h3>⚙️ 学习设置</h3>
+    <div class="form-row">
+      <label>开始学习日期</label>
+      <input type="date" id="startDateInput">
+    </div>
+    <div class="form-row">
+      <label>每天新增集数上限</label>
+      <select id="dailyNewInput">
+        <option value="1">1集（轻松模式）</option>
+        <option value="2" selected>2集（标准模式）</option>
+        <option value="3">3集（强化模式）</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>每天最多观看总数（含复习）</label>
+      <select id="dailyMaxInput">
+        <option value="3">3集</option>
+        <option value="4" selected>4集</option>
+        <option value="5">5集</option>
+        <option value="6">6集</option>
+      </select>
+    </div>
+    <button class="btn-primary" onclick="saveSettings()">💾 保存设置</button>
+  </div>
+
+  <div class="settings-section">
+    <h3>➕ 手动添加自定义集数</h3>
+    <div class="form-row">
+      <label>集数编号（如：34）</label>
+      <input type="number" id="customEpNum" placeholder="34">
+    </div>
+    <div class="form-row">
+      <label>英文标题</label>
+      <input type="text" id="customEpEn" placeholder="My Custom Episode">
+    </div>
+    <div class="form-row">
+      <label>中文标题</label>
+      <input type="text" id="customEpZh" placeholder="自定义集数">
+    </div>
+    <div class="form-row">
+      <label>类型</label>
+      <select id="customEpType">
+        <option value="story">故事 story</option>
+        <option value="song">歌曲 song</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>所属Unit</label>
+      <input type="text" id="customEpUnit" placeholder="Unit 10 - Custom">
+    </div>
+    <button class="btn-primary" onclick="addCustomEpisode()" style="margin-bottom:10px">➕ 添加集数</button>
+  </div>
+
+  <!-- 云同步设置 -->
+  <div class="settings-section">
+    <h3>☁️ 云同步（家庭共享）</h3>
+    <div style="background:#FFF9E6;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#7A5C00;line-height:1.6">
+      配置后，全家人打卡数据实时同步。<br>
+      未配置时仅本地存储，不影响正常使用。
+    </div>
+    <div class="form-row">
+      <label>当前使用者</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <span id="currentMemberDisplay" style="font-weight:600;color:var(--text)">未设置</span>
+        <button class="btn-primary" style="padding:4px 12px;font-size:12px" onclick="promptSetMember()">切换</button>
+      </div>
+    </div>
+    <div class="form-row" style="align-items:flex-start;flex-direction:column;gap:6px">
+      <label style="margin-bottom:2px">快速选择成员</label>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn-primary" style="padding:5px 14px;font-size:13px" onclick="setMember('爸爸')">👨 爸爸</button>
+        <button class="btn-primary" style="padding:5px 14px;font-size:13px" onclick="setMember('妈妈')">👩 妈妈</button>
+        <button class="btn-primary" style="padding:5px 14px;font-size:13px" onclick="setMember('宝宝')">👶 宝宝</button>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-primary" onclick="syncNow()" style="background:linear-gradient(135deg,#4CAF50,#2E7D32)">
+        🔄 立即同步云端
+      </button>
+    </div>
+    <div style="margin-top:12px;font-size:11px;color:var(--text-secondary)">
+      💡 需要配置 Supabase 才能使用云同步，详见
+      <a href="#" onclick="showToast('请查看 DEPLOY.md 部署说明');return false" style="color:var(--blue)">部署说明</a>
+    </div>
+  </div>
+
+  <div class="settings-section">
+    <h3>🗑️ 数据管理</h3>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn-danger" onclick="exportData()">📤 导出数据</button>
+      <button class="btn-danger" onclick="importDataPrompt()">📥 导入数据</button>
+      <button class="btn-danger" onclick="resetData()">🔄 重置所有数据</button>
+    </div>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const EPISODES_DEFAULT = [
+  // Unit 1 - Hello
+  { id:1,  num:'01', en:"Hello, Let's start! (walk, run, jump)", zh:'你好，我们开始吧！（走，跑，跳）', type:'story', unit:'Unit 1', unitZh:'你好', duration:'3:55' },
+  { id:2,  num:'02', en:'Be careful (walk, jump, run)',          zh:'小心（走，跳，跑）',               type:'song',  unit:'Unit 1', unitZh:'你好', duration:'1:46' },
+  { id:3,  num:'03', en:'1,2,3 Oh yeah! (one, two, three)',      zh:'1,2,3 哦，是的！（一，二，三）',   type:'song',  unit:'Unit 1', unitZh:'你好', duration:'1:10' },
+  // Unit 2 - Colours
+  { id:4,  num:'04', en:'Colours (red, green, yellow)',          zh:'颜色（红，绿，黄）',               type:'story', unit:'Unit 2', unitZh:'颜色', duration:'3:53' },
+  { id:5,  num:'05', en:'Red, green, yellow (red, green, yellow)',zh:'红，绿，黄（红，绿，黄）',         type:'song',  unit:'Unit 2', unitZh:'颜色', duration:'2:33' },
+  // Unit 3 - Garden
+  { id:6,  num:'06', en:'Garden-Clip 1 (house, window, door)',   zh:'花园片段1（房子，窗户，门）',       type:'story', unit:'Unit 3', unitZh:'花园', duration:'4:47' },
+  { id:7,  num:'07', en:"What is it? part 1 (house, window, door)", zh:'它是什么？1部分（房子，窗户，门）', type:'song', unit:'Unit 3', unitZh:'花园', duration:'1:34' },
+  { id:8,  num:'08', en:'Garden-Clip 2 (flower, tree, sun)',     zh:'花园片段2（花，树，太阳）',         type:'story', unit:'Unit 3', unitZh:'花园', duration:'4:52' },
+  { id:9,  num:'09', en:"What is it? part 2 (flower, tree, sun)",zh:'它是什么？2部分（花，树，太阳）',   type:'song',  unit:'Unit 3', unitZh:'花园', duration:'1:31' },
+  // Unit 4 - Toys
+  { id:10, num:'10', en:'Toys-Clip 1 (bike, car, train)',        zh:'玩具片段1（自行车，汽车，火车）',   type:'story', unit:'Unit 4', unitZh:'玩具', duration:'3:59' },
+  { id:11, num:'11', en:'Come on! Come on! part 1 (bike, car, train)', zh:'来吧！来吧！1部分（自行车，汽车，火车）', type:'song', unit:'Unit 4', unitZh:'玩具', duration:'1:17' },
+  { id:12, num:'12', en:'Toys-Clip 2 (boat, scooter, plane)',    zh:'玩具片段2（船，滑板车，飞机）',     type:'story', unit:'Unit 4', unitZh:'玩具', duration:'5:07' },
+  { id:13, num:'13', en:'Come on! Come on! part 2 (boat, scooter, plane)', zh:'来吧！来吧！2部分（船，滑板车，飞机）', type:'song', unit:'Unit 4', unitZh:'玩具', duration:'1:17' },
+  // Unit 5 - Body
+  { id:14, num:'14', en:'Body-Clip 1 (face, arm, leg)',          zh:'身体片段1（脸，胳膊，腿）',         type:'story', unit:'Unit 5', unitZh:'身体', duration:'4:28' },
+  { id:15, num:'15', en:'Go to bed! part 1 (face, arm, leg)',    zh:'去睡觉！1部分（脸，胳膊，腿）',     type:'song',  unit:'Unit 5', unitZh:'身体', duration:'1:33' },
+  { id:16, num:'16', en:'Body-Clip 2 (finger, toe, body)',       zh:'身体片段2（手指，脚趾，身体）',     type:'story', unit:'Unit 5', unitZh:'身体', duration:'4:45' },
+  { id:17, num:'17', en:'Go to bed! part 2 (finger, toe, body)', zh:'去睡觉！2部分（手指，脚趾，身体）', type:'song',  unit:'Unit 5', unitZh:'身体', duration:'1:34' },
+  // Unit 6 - Food
+  { id:18, num:'18', en:'Food-Clip 1 (apple, banana, orange)',   zh:'食物片段1（苹果，香蕉，橙子）',     type:'story', unit:'Unit 6', unitZh:'食物', duration:'4:45' },
+  { id:19, num:'19', en:'Here you are! part 1 (apple, banana, orange)', zh:'给你！1部分（苹果，香蕉，橙子）', type:'song', unit:'Unit 6', unitZh:'食物', duration:'2:36' },
+  { id:20, num:'20', en:'Food-Clip 2 (cake, chocolate, ice cream)', zh:'食物片段2（蛋糕，巧克力，冰激凌）', type:'story', unit:'Unit 6', unitZh:'食物', duration:'4:01' },
+  { id:21, num:'21', en:'Here you are! part 2 (cake, chocolate, ice cream)', zh:'给你！2部分（蛋糕，巧克力，冰激凌）', type:'song', unit:'Unit 6', unitZh:'食物', duration:'2:29' },
+  // Unit 7 - Bugs
+  { id:22, num:'22', en:'Bugs-Clip 1 (ladybird, snail, bee)',    zh:'虫子片段1（瓢虫，蜗牛，蜜蜂）',     type:'story', unit:'Unit 7', unitZh:'虫子', duration:'4:54' },
+  { id:23, num:'23', en:'I see you! part 1 (ladybird, snail, bee)', zh:'我看见你啦！1部分（瓢虫，蜗牛，蜜蜂）', type:'song', unit:'Unit 7', unitZh:'虫子', duration:'1:15' },
+  { id:24, num:'24', en:'Bugs-Clip 2 (butterfly, worm, frog)',   zh:'虫子片段2（蝴蝶，虫子，青蛙）',     type:'story', unit:'Unit 7', unitZh:'虫子', duration:'4:20' },
+  { id:25, num:'25', en:'I see you! part 2 (butterfly, worm, frog)', zh:'我看见你啦！2部分（蝴蝶，虫子，青蛙）', type:'song', unit:'Unit 7', unitZh:'虫子', duration:'1:13' },
+  // Unit 8 - Feelings
+  { id:26, num:'26', en:'Feelings-Clip 1 (happy, sad, OK)',      zh:'情绪片段1（高兴，难过，还好）',     type:'story', unit:'Unit 8', unitZh:'情绪', duration:'3:34' },
+  { id:27, num:'27', en:'Are you OK? part 1 (happy, sad, OK)',   zh:'你还好吗？1部分（高兴，难过，还好）', type:'song', unit:'Unit 8', unitZh:'情绪', duration:'1:29' },
+  { id:28, num:'28', en:'Feelings-Clip 2 (hot, cold, sleepy)',   zh:'情绪片段2（热的，冷的，困的）',     type:'story', unit:'Unit 8', unitZh:'情绪', duration:'4:48' },
+  { id:29, num:'29', en:'Are you OK? part 2 (hot, cold, sleepy)',zh:'你还好吗？2部分（热的，冷的，困的）', type:'song', unit:'Unit 8', unitZh:'情绪', duration:'1:32' },
+  // Unit 9 - Clothes
+  { id:30, num:'30', en:'Clothes-Clip 1 (T-shirt, shorts, skirt)', zh:'衣服片段1（T恤，短裤，短裙）',   type:'story', unit:'Unit 9', unitZh:'衣服', duration:'5:15' },
+  { id:31, num:'31', en:'Get dressed! part 1 (T-shirt, shorts, skirt)', zh:'穿好衣服！1部分（T恤，短裤，短裙）', type:'song', unit:'Unit 9', unitZh:'衣服', duration:'1:27' },
+  { id:32, num:'32', en:'Clothes-Clip 2 (jacket, trousers, hat)', zh:'衣服片段2（夹克，裤子，帽子）',   type:'story', unit:'Unit 9', unitZh:'衣服', duration:'4:34' },
+  { id:33, num:'33', en:'Get dressed! part 2 (jacket, trousers, hat)', zh:'穿好衣服！2部分（夹克，裤子，帽子）', type:'song', unit:'Unit 9', unitZh:'衣服', duration:'1:31' },
+];
+
+// Spaced repetition intervals (days after first watch)
+const REVIEW_INTERVALS = [0, 1, 4, 11]; // day 0=new, +1, +4, +11
+
+// ============================================================
+// STATE
+// ============================================================
+let state = {
+  settings: { startDate: todayStr(), dailyNew: 2, dailyMax: 4 },
+  episodes: JSON.parse(JSON.stringify(EPISODES_DEFAULT)),
+  // watchLog: { epId: [dateStr, dateStr, ...] }  max 4 entries
+  watchLog: {},
+  // checkins: { dateStr: [epId, ...] }
+  checkins: {},
+};
+
+function todayStr() {
+  return new Date().toISOString().slice(0,10);
+}
+function dateStr(d) {
+  return d.toISOString().slice(0,10);
+}
+function parseDate(s) {
+  return new Date(s + 'T00:00:00');
+}
+function dayDiff(a, b) { // b - a in days
+  return Math.round((parseDate(b) - parseDate(a)) / 86400000);
+}
+function addDays(s, n) {
+  const d = parseDate(s);
+  d.setDate(d.getDate() + n);
+  return dateStr(d);
+}
+function formatDate(s) {
+  const d = parseDate(s);
+  const days = ['日','一','二','三','四','五','六'];
+  return `${d.getMonth()+1}月${d.getDate()}日 周${days[d.getDay()]}`;
+}
+function formatDateShort(s) {
+  const d = parseDate(s);
+  return `${d.getMonth()+1}/${d.getDate()}`;
+}
+function getDOW(s) {
+  const days = ['日','一','二','三','四','五','六'];
+  return '周' + days[parseDate(s).getDay()];
+}
+
+// ============================================================
+// SUPABASE CONFIG
+// 填入你自己的 Supabase 项目信息（见部署说明）
+// ============================================================
+const SUPABASE_URL = 'https://wopmhsbtsjwyoyxzmyck.supabase.co';   // 例: 'https://xxxx.supabase.co'
+const SUPABASE_KEY = 'sb_publishable_G6926mheOc_s1o4p2KMlgA_5YCfqhB9';   // 例: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+const FAMILY_ID    = 'huang_family'; // 家庭唯一标识，自定义即可
+
+// 当前使用者（存在 localStorage，每台设备独立设置）
+let currentMember = localStorage.getItem('wow_member') || '';
+
+// ============================================================
+// PERSISTENCE — 优先 Supabase，降级 localStorage
+// ============================================================
+
+// 判断 Supabase 是否已配置
+function isSupabaseReady() {
+  return SUPABASE_URL && SUPABASE_KEY;
+}
+
+// 保存到 localStorage（始终执行，作为离线缓存）
+function saveLocal() {
+  localStorage.setItem('wow_yellow_state', JSON.stringify(state));
+}
+
+// 从 localStorage 加载
+function loadLocal() {
+  const raw = localStorage.getItem('wow_yellow_state');
+  if (raw) {
+    try {
+      const saved = JSON.parse(raw);
+      state = saved;
+      const existingIds = new Set(state.episodes.map(e => e.id));
+      EPISODES_DEFAULT.forEach(ep => {
+        if (!existingIds.has(ep.id)) state.episodes.unshift(ep);
+      });
+    } catch(e) {}
+  }
+}
+
+// 保存到 Supabase
+async function saveRemote() {
+  if (!isSupabaseReady()) return;
+  try {
+    const payload = {
+      family_id: FAMILY_ID,
+      data: JSON.stringify(state),
+      updated_at: new Date().toISOString(),
+      updated_by: currentMember || 'unknown'
+    };
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/wow_tracker`, {
+      method: 'POST',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) console.warn('Supabase save failed:', res.status);
+  } catch(e) {
+    console.warn('Supabase save error:', e);
+  }
+}
+
+// 从 Supabase 加载
+async function loadRemote() {
+  if (!isSupabaseReady()) return false;
+  try {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/wow_tracker?family_id=eq.${FAMILY_ID}&select=data,updated_at,updated_by`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`
+        }
+      }
+    );
+    if (!res.ok) return false;
+    const rows = await res.json();
+    if (!rows || rows.length === 0) return false;
+    const saved = JSON.parse(rows[0].data);
+    state = saved;
+    const existingIds = new Set(state.episodes.map(e => e.id));
+    EPISODES_DEFAULT.forEach(ep => {
+      if (!existingIds.has(ep.id)) state.episodes.unshift(ep);
+    });
+    // 同步到本地缓存
+    saveLocal();
+    const by = rows[0].updated_by || '';
+    const at = rows[0].updated_at ? rows[0].updated_at.slice(0,16).replace('T',' ') : '';
+    if (by && by !== currentMember) {
+      showToast(`☁️ 已同步云端数据（${by} ${at}）`);
+    }
+    return true;
+  } catch(e) {
+    console.warn('Supabase load error:', e);
+    return false;
+  }
+}
+
+// 统一保存入口
+function saveState() {
+  saveLocal();
+  saveRemote(); // 异步，不阻塞 UI
+}
+
+// 统一加载入口（异步）
+async function loadState() {
+  // 先加载本地缓存，保证即时显示
+  loadLocal();
+  renderAll();
+  // 再尝试从云端拉取最新数据
+  const ok = await loadRemote();
+  if (ok) renderAll();
+}
+
+// 手动同步按钮
+async function syncNow() {
+  showToast('⏳ 同步中...');
+  const ok = await loadRemote();
+  if (ok) {
+    renderAll();
+    showToast('✅ 同步成功');
+  } else if (!isSupabaseReady()) {
+    showToast('⚠️ 未配置 Supabase，仅本地存储');
+  } else {
+    showToast('❌ 同步失败，请检查网络');
+  }
+}
+
+// 设置当前使用者
+function setMember(name) {
+  currentMember = name;
+  localStorage.setItem('wow_member', name);
+  const el = document.getElementById('currentMemberDisplay');
+  if (el) el.textContent = name || '未设置';
+  showToast(`👤 已切换到：${name}`);
+}
+
+function promptSetMember() {
+  const name = prompt('请输入你的名字（如：爸爸、妈妈、奶奶）', currentMember);
+  if (name !== null && name.trim()) setMember(name.trim());
+}
+
+// ============================================================
+// SCHEDULE ENGINE
+// ============================================================
+
+// Get watch count for episode
+function getWatchCount(epId) {
+  return (state.watchLog[epId] || []).length;
+}
+
+// Get next scheduled date for an episode
+function getNextScheduledDate(epId) {
+  const log = state.watchLog[epId] || [];
+  const count = log.length;
+  if (count >= 4) return null; // fully mastered
+  if (count === 0) return null; // not started yet, scheduler decides
+  const firstDate = log[0];
+  const nextInterval = REVIEW_INTERVALS[count];
+  return addDays(firstDate, nextInterval);
+}
+
+// Build schedule: for each date, what episodes to watch
+// Returns: { dateStr: [{epId, isNew, reviewNum}] }
+function buildSchedule(daysAhead = 30) {
+  const today = todayStr();
+  const startDate = state.settings.startDate || today;
+  const dailyNew = state.settings.dailyNew;
+  const dailyMax = state.settings.dailyMax;
+
+  // Collect all episodes not yet mastered
+  const allEps = state.episodes;
+
+  // Build a map of scheduled items per day
+  const schedule = {};
+
+  // First, place all due reviews
+  allEps.forEach(ep => {
+    const count = getWatchCount(ep.id);
+    if (count === 0 || count >= 4) return;
+    const nextDate = getNextScheduledDate(ep.id);
+    if (!nextDate) return;
+    if (!schedule[nextDate]) schedule[nextDate] = [];
+    schedule[nextDate].push({ epId: ep.id, isNew: false, reviewNum: count + 1 });
+  });
+
+  // Then, fill in new episodes day by day
+  let epIdx = 0; // next episode to introduce
+  // Find first unstarted episode
+  while (epIdx < allEps.length && getWatchCount(allEps[epIdx].id) > 0) epIdx++;
+
+  for (let i = 0; i < daysAhead; i++) {
+    const d = addDays(startDate, i);
+    if (d < today) continue; // skip past dates for new ep assignment
+    if (!schedule[d]) schedule[d] = [];
+
+    // Count how many slots are used by reviews
+    const reviewCount = schedule[d].filter(x => !x.isNew).length;
+    const newSlots = Math.max(0, Math.min(dailyNew, dailyMax - reviewCount));
+
+    for (let s = 0; s < newSlots && epIdx < allEps.length; s++) {
+      const ep = allEps[epIdx];
+      if (getWatchCount(ep.id) === 0) {
+        schedule[d].push({ epId: ep.id, isNew: true, reviewNum: 1 });
+        epIdx++;
+      } else {
+        epIdx++;
+        s--; // retry
+      }
+    }
+  }
+
+  return schedule;
+}
+
+// ============================================================
+// CHECK-IN
+// ============================================================
+function checkIn(epId, dateStr) {
+  const log = state.watchLog[epId] || [];
+  if (log.includes(dateStr)) {
+    // Undo check-in
+    state.watchLog[epId] = log.filter(d => d !== dateStr);
+    if (state.checkins[dateStr]) {
+      state.checkins[dateStr] = state.checkins[dateStr].filter(id => id !== epId);
+    }
+    showToast('已取消打卡');
+  } else {
+    if (log.length >= 4) { showToast('该集已完成4次复习！'); return; }
+    state.watchLog[epId] = [...log, dateStr].sort();
+    if (!state.checkins[dateStr]) state.checkins[dateStr] = [];
+    if (!state.checkins[dateStr].includes(epId)) state.checkins[dateStr].push(epId);
+    showToast('✅ 打卡成功！');
+  }
+  saveState();
+  renderAll();
+}
+
+function isCheckedToday(epId) {
+  const today = todayStr();
+  return (state.watchLog[epId] || []).includes(today);
+}
+
+// ============================================================
+// STREAK
+// ============================================================
+function calcStreak() {
+  let streak = 0;
+  let d = todayStr();
+  while (true) {
+    const checkins = state.checkins[d] || [];
+    if (checkins.length > 0) { streak++; d = addDays(d, -1); }
+    else break;
+  }
+  return streak;
+}
+
+// ============================================================
+// RENDER
+// ============================================================
+function renderAll() {
+  renderToday();
+  renderPlan();
+  renderEpisodes();
+  renderStats();
+  renderSettings();
+  document.getElementById('streakBadge').textContent = `🔥 ${calcStreak()}天`;
+}
+
+// ----- TODAY -----
+function renderToday() {
+  const today = todayStr();
+  document.getElementById('todayDateLabel').innerHTML = `📅 ${formatDate(today)}`;
+
+  const schedule = buildSchedule(60);
+  const todayItems = schedule[today] || [];
+
+  const list = document.getElementById('todayEpisodeList');
+  const noMsg = document.getElementById('noTodayMsg');
+
+  if (todayItems.length === 0) {
+    list.innerHTML = '';
+    noMsg.style.display = 'block';
+    return;
+  }
+  noMsg.style.display = 'none';
+
+  list.innerHTML = todayItems.map(item => {
+    const ep = state.episodes.find(e => e.id === item.epId);
+    if (!ep) return '';
+    const checked = isCheckedToday(ep.id);
+    const isNew = item.isNew;
+    const rNum = item.reviewNum;
+    const tagClass = isNew ? 'tag-new' : (rNum===2?'tag-r1':rNum===3?'tag-r2':'tag-r3');
+    const tagText = isNew ? '新内容' : `第${rNum}次`;
+    const itemClass = isNew ? 'new-ep' : 'review-ep';
+    return `
+      <div class="episode-item ${itemClass} ${checked?'done':''}">
+        <div class="ep-num">${ep.num}</div>
+        <div class="ep-info">
+          <div class="ep-title">${ep.en}</div>
+          <div class="ep-meta">${ep.zh} · ${ep.duration} · ${ep.type==='story'?'📖故事':'🎵歌曲'}</div>
+        </div>
+        <span class="ep-tag ${tagClass}">${tagText}</span>
+        <button class="check-btn ${checked?'checked':''}" onclick="checkIn(${ep.id},'${today}')">
+          ${checked?'✓':''}
+        </button>
+      </div>`;
+  }).join('');
+}
+
+// ----- PLAN -----
+function renderPlan() {
+  const today = todayStr();
+  const schedule = buildSchedule(60);
+  const container = document.getElementById('planContainer');
+
+  // Show 14 days: 3 past + today + 10 future
+  const days = [];
+  for (let i = -3; i <= 13; i++) days.push(addDays(today, i));
+
+  // Group by week
+  let html = '';
+  let weekHtml = '';
+  let weekLabel = '';
+
+  days.forEach((d, idx) => {
+    const items = schedule[d] || [];
+    const isPast = d < today;
+    const isToday = d === today;
+
+    const wLabel = getWeekLabel(d);
+    if (wLabel !== weekLabel) {
+      if (weekHtml) html += `<div class="plan-week"><div class="plan-week-title">${weekLabel}</div>${weekHtml}</div>`;
+      weekLabel = wLabel;
+      weekHtml = '';
+    }
+
+    const chips = items.map(item => {
+      const ep = state.episodes.find(e => e.id === item.epId);
+      if (!ep) return '';
+      const isNew = item.isNew;
+      return `<span class="plan-ep-chip ${isNew?'chip-new':'chip-review'}">
+        ${isNew?'🆕':'🔄'} ${ep.num}. ${ep.zh.substring(0,8)}${ep.zh.length>8?'…':''}
+      </span>`;
+    }).join('');
+
+    const checkedCount = (state.checkins[d] || []).length;
+    const totalCount = items.length;
+    const doneIndicator = checkedCount > 0 ? `<span style="font-size:11px;color:var(--green);margin-left:4px">✓${checkedCount}/${totalCount}</span>` : '';
+
+    weekHtml += `
+      <div class="plan-day-card ${isToday?'today-plan':''} ${isPast?'past-plan':''}">
+        <div class="plan-date-col">
+          <div class="plan-date-num">${parseDate(d).getDate()}</div>
+          <div class="plan-date-dow">${getDOW(d)}</div>
+          ${isToday?'<div style="font-size:9px;color:#F9A825;font-weight:700">今天</div>':''}
+        </div>
+        <div class="plan-eps">
+          ${items.length === 0
+            ? '<span style="font-size:12px;color:#ccc">休息日 🌙</span>'
+            : chips + doneIndicator
+          }
+        </div>
+      </div>`;
+  });
+  if (weekHtml) html += `<div class="plan-week"><div class="plan-week-title">${weekLabel}</div>${weekHtml}</div>`;
+
+  container.innerHTML = html;
+}
+
+function getWeekLabel(d) {
+  const today = todayStr();
+  const diff = dayDiff(today, d);
+  if (diff < 0) return '过去';
+  if (diff < 7) return '本周';
+  if (diff < 14) return '下周';
+  return '之后';
+}
+
+// ----- EPISODES -----
+function renderEpisodes() {
+  const container = document.getElementById('episodesContainer');
+  const units = [...new Set(state.episodes.map(e => e.unit))];
+
+  container.innerHTML = units.map(unit => {
+    const eps = state.episodes.filter(e => e.unit === unit);
+    const unitZh = eps[0].unitZh;
+    const doneCount = eps.filter(e => getWatchCount(e.id) >= 4).length;
+
+    const rows = eps.map(ep => {
+      const count = getWatchCount(ep.id);
+      const dots = [0,1,2,3].map(i =>
+        `<div class="watch-dot ${i < count ? 'done' : ''}"></div>`
+      ).join('');
+      return `
+        <div class="ep-row">
+          <div class="ep-row-num">${ep.num}</div>
+          <div class="ep-row-title">
+            <div class="en">${ep.en.length > 28 ? ep.en.substring(0,28)+'…' : ep.en}</div>
+            <div class="zh">${ep.zh}</div>
+          </div>
+          <span class="ep-row-type ${ep.type==='story'?'type-story':'type-song'}">${ep.type==='story'?'故事':'歌曲'}</span>
+          <div class="ep-row-watches">${dots}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="unit-section">
+        <div class="unit-header">
+          <div class="unit-dot"></div>
+          <div class="unit-name">${unit}</div>
+          <div class="unit-en">${unitZh}</div>
+          <div class="unit-progress">${doneCount}/${eps.length}</div>
+        </div>
+        <div class="ep-grid">${rows}</div>
+      </div>`;
+  }).join('');
+}
+
+// ----- STATS -----
+function renderStats() {
+  const total = state.episodes.length;
+  const started = state.episodes.filter(e => getWatchCount(e.id) > 0).length;
+  const mastered = state.episodes.filter(e => getWatchCount(e.id) >= 4).length;
+  const streak = calcStreak();
+
+  // 动态Banner文案
+  const bannerMsgs = [
+    ['我们的学习旅程 🌟', '一起加油，每天进步一点点！'],
+    ['太棒了！坚持了1天 🎉', '好的开始是成功的一半！'],
+    ['连续打卡3天 🔥', '宝贝越来越厉害啦！'],
+    ['连续打卡7天 🏆', '一周不间断，超级棒！'],
+    ['连续打卡14天 🌈', '两周坚持，英语进步飞快！'],
+    ['连续打卡30天 👑', '一个月！宝贝是英语小达人！'],
+  ];
+  let bannerIdx = 0;
+  if (streak >= 30) bannerIdx = 5;
+  else if (streak >= 14) bannerIdx = 4;
+  else if (streak >= 7) bannerIdx = 3;
+  else if (streak >= 3) bannerIdx = 2;
+  else if (streak >= 1) bannerIdx = 1;
+  const [bannerTitle, bannerSub] = bannerMsgs[bannerIdx];
+  document.getElementById('statsBannerTitle').textContent = bannerTitle;
+  document.getElementById('statsBannerSub').textContent = bannerSub;
+
+  document.getElementById('summaryRow').innerHTML = `
+    <div class="summary-card">
+      <span class="s-icon">🔥</span>
+      <div class="s-num">${streak}</div>
+      <div class="s-label">连续打卡天</div>
+    </div>
+    <div class="summary-card">
+      <span class="s-icon">📺</span>
+      <div class="s-num">${started}</div>
+      <div class="s-label">已开始集数</div>
+    </div>
+    <div class="summary-card">
+      <span class="s-icon">⭐</span>
+      <div class="s-num">${mastered}</div>
+      <div class="s-label">已掌握集数</div>
+    </div>
+  `;
+
+  const overallPct = Math.round(started / total * 100);
+  const masteredPct = Math.round(mastered / total * 100);
+  document.getElementById('overallPct').textContent = overallPct + '%';
+  document.getElementById('overallBar').style.width = overallPct + '%';
+  document.getElementById('masteredPct').textContent = masteredPct + '%';
+  document.getElementById('masteredBar').style.width = masteredPct + '%';
+
+  // Calendar
+  renderCalendar();
+
+  // Unit progress
+  const units = [...new Set(state.episodes.map(e => e.unit))];
+  document.getElementById('unitProgressList').innerHTML = units.map(unit => {
+    const eps = state.episodes.filter(e => e.unit === unit);
+    const unitZh = eps[0].unitZh;
+    const done = eps.filter(e => getWatchCount(e.id) >= 4).length;
+    const started = eps.filter(e => getWatchCount(e.id) > 0).length;
+    const pct = Math.round(done / eps.length * 100);
+    return `
+      <div class="progress-bar-wrap">
+        <div class="progress-label">
+          <span>${unit} ${unitZh}</span>
+          <span>${done}/${eps.length} 掌握</span>
+        </div>
+        <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+      </div>`;
+  }).join('');
+}
+
+function renderCalendar() {
+  const today = todayStr();
+  const d = parseDate(today);
+  // Show current month
+  const year = d.getFullYear();
+  const month = d.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const lastDay = new Date(year, month + 1, 0);
+  const startDow = firstDay.getDay(); // 0=Sun
+
+  const days = ['日','一','二','三','四','五','六'];
+  let html = days.map(d => `<div class="cal-day-label">${d}</div>`).join('');
+
+  // Empty cells
+  for (let i = 0; i < startDow; i++) html += '<div class="cal-day empty"></div>';
+
+  for (let day = 1; day <= lastDay.getDate(); day++) {
+    const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const hasCheckin = (state.checkins[ds] || []).length > 0;
+    const isToday = ds === today;
+    const isFuture = ds > today;
+    let cls = 'cal-day';
+    if (hasCheckin) cls += ' has-checkin';
+    else if (isToday) cls += ' today';
+    else if (isFuture) cls += ' future';
+    else cls += ' past';
+    html += `<div class="${cls}">${day}</div>`;
+  }
+
+  document.getElementById('calGrid').innerHTML = html;
+}
+
+// ----- SETTINGS -----
+function renderSettings() {
+  document.getElementById('startDateInput').value = state.settings.startDate || todayStr();
+  document.getElementById('dailyNewInput').value = state.settings.dailyNew || 2;
+  document.getElementById('dailyMaxInput').value = state.settings.dailyMax || 4;
+}
+
+// ============================================================
+// ACTIONS
+// ============================================================
+function saveSettings() {
+  state.settings.startDate = document.getElementById('startDateInput').value;
+  state.settings.dailyNew = parseInt(document.getElementById('dailyNewInput').value);
+  state.settings.dailyMax = parseInt(document.getElementById('dailyMaxInput').value);
+  saveState();
+  renderAll();
+  showToast('✅ 设置已保存');
+}
+
+function addCustomEpisode() {
+  const num = document.getElementById('customEpNum').value.trim();
+  const en = document.getElementById('customEpEn').value.trim();
+  const zh = document.getElementById('customEpZh').value.trim();
+  const type = document.getElementById('customEpType').value;
+  const unit = document.getElementById('customEpUnit').value.trim() || 'Unit 10';
+
+  if (!num || !en || !zh) { showToast('请填写完整信息'); return; }
+
+  const newId = Math.max(...state.episodes.map(e => e.id)) + 1;
+  state.episodes.push({
+    id: newId, num: num.padStart(2,'0'), en, zh, type,
+    unit, unitZh: unit.replace(/Unit \d+ - ?/,''), duration: '?:??'
+  });
+  saveState();
+  renderAll();
+  showToast('✅ 已添加自定义集数');
+  document.getElementById('customEpNum').value = '';
+  document.getElementById('customEpEn').value = '';
+  document.getElementById('customEpZh').value = '';
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(state, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `wow_yellow_${todayStr()}.json`;
+  a.click();
+  showToast('📤 数据已导出');
+}
+
+function importDataPrompt() {
+  document.getElementById('importFile').click();
+}
+
+function importData(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      state = JSON.parse(e.target.result);
+      saveState();
+      renderAll();
+      showToast('📥 数据已导入');
+    } catch(err) {
+      showToast('❌ 导入失败，文件格式错误');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function resetData() {
+  if (!confirm('确定要重置所有打卡数据吗？此操作不可撤销。')) return;
+  state.watchLog = {};
+  state.checkins = {};
+  saveState();
+  renderAll();
+  showToast('🔄 数据已重置');
+}
+
+// ============================================================
+// UI
+// ============================================================
+function switchPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  document.getElementById('nav-' + name).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2000);
+}
+
+// ============================================================
+// PWA SERVICE WORKER
+// ============================================================
+if ('serviceWorker' in navigator) {
+  // Inline service worker via blob URL for single-file PWA
+  const swCode = `
+    const CACHE = 'wow-yellow-v1';
+    self.addEventListener('install', e => {
+      e.waitUntil(caches.open(CACHE).then(c => c.addAll(['./'])));
+      self.skipWaiting();
+    });
+    self.addEventListener('activate', e => {
+      e.waitUntil(clients.claim());
+    });
+    self.addEventListener('fetch', e => {
+      e.respondWith(
+        caches.match(e.request).then(r => r || fetch(e.request).then(res => {
+          const clone = res.clone();
+          caches.open(CACHE).then(c => c.put(e.request, clone));
+          return res;
+        })).catch(() => caches.match('./'))
+      );
+    });
+  `;
+  const blob = new Blob([swCode], {type: 'application/javascript'});
+  const swUrl = URL.createObjectURL(blob);
+  navigator.serviceWorker.register(swUrl).catch(() => {});
+}
+
+// ============================================================
+// INIT
+// ============================================================
+(async () => {
+  await loadState();
+  if (!state.settings.startDate) state.settings.startDate = todayStr();
+  // 初始化成员显示
+  const el = document.getElementById('currentMemberDisplay');
+  if (el) el.textContent = currentMember || '未设置';
+  renderAll();
+})();
+
+// iOS 防止双击缩放
+document.addEventListener('dblclick', e => e.preventDefault());
+// 防止 iOS 橡皮筋滚动影响底部导航
+document.addEventListener('touchmove', e => {
+  if (e.target.closest('.bottom-nav')) e.preventDefault();
+}, { passive: false });
+</script>
+</body>
+</html>

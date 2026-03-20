@@ -674,12 +674,13 @@
 <div class="page" id="page-settings">
   <div class="settings-section">
     <h3>⚙️ 学习设置</h3>
-    <div class="form-row">
-      <label>开始学习日期</label>
-      <input type="date" id="startDateInput">
+    <div style="background:#E8F5E9;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#2E7D32;line-height:1.6">
+      💡 每天打开 App，系统自动根据当天日期推算今日任务：<br>
+      · <b>新集</b>：按顺序安排还没学过的集<br>
+      · <b>复习集</b>：按间隔复习算法（+1天、+4天、+11天）自动安排，过期任务顺延到今天
     </div>
     <div class="form-row">
-      <label>每天新增集数上限</label>
+      <label>每天新增集数</label>
       <select id="dailyNewInput">
         <option value="1">1集（轻松模式）</option>
         <option value="2" selected>2集（标准模式）</option>
@@ -901,13 +902,15 @@ function switchShow(showId) {
 }
 
 function todayStr() {
-  return new Date().toISOString().slice(0,10);
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function dateStr(d) {
-  return d.toISOString().slice(0,10);
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
 }
 function parseDate(s) {
-  return new Date(s + 'T00:00:00');
+  const [y,m,day] = s.split('-').map(Number);
+  return new Date(y, m-1, day);
 }
 function dayDiff(a, b) { // b - a in days
   return Math.round((parseDate(b) - parseDate(a)) / 86400000);
@@ -1163,55 +1166,96 @@ function getNextScheduledDate(epId) {
 
 // Build schedule: for each date, what episodes to watch
 // Returns: { dateStr: [{epId, isNew, reviewNum}] }
+// 复习集：严格按间隔日期排（不变）
+// 新集：以今天为锚点动态推算，不依赖 startDate 线性排列
 function buildSchedule(daysAhead = 30) {
   const today = todayStr();
-  const startDate = state.settings.startDate || today;
   const dailyNew = state.settings.dailyNew;
   const dailyMax = state.settings.dailyMax;
-
-  // Collect all episodes not yet mastered（当前片）
   const allEps = currentShow().episodes;
 
-  // Build a map of scheduled items per day
+  // Step 1: 放置所有到期复习集（按间隔日期）
+  // 如果复习日期已过期（早于今天），顺延到今天
   const schedule = {};
-
-  // First, place all due reviews
   allEps.forEach(ep => {
     const count = getWatchCount(ep.id);
     if (count === 0 || count >= 4) return;
     const nextDate = getNextScheduledDate(ep.id);
     if (!nextDate) return;
-    if (!schedule[nextDate]) schedule[nextDate] = [];
-    schedule[nextDate].push({ epId: ep.id, isNew: false, reviewNum: count + 1 });
+    // 过期的复习任务顺延到今天
+    const scheduleDate = nextDate < today ? today : nextDate;
+    if (!schedule[scheduleDate]) schedule[scheduleDate] = [];
+    // 避免重复（同一集可能因多次过期被重复添加）
+    if (!schedule[scheduleDate].find(x => x.epId === ep.id)) {
+      schedule[scheduleDate].push({ epId: ep.id, isNew: false, reviewNum: count + 1 });
+    }
   });
 
-  // Then, fill in new episodes day by day
-  let epIdx = 0; // next episode to introduce
-  // Find first unstarted episode
-  while (epIdx < allEps.length && getWatchCount(allEps[epIdx].id) > 0) epIdx++;
+  // Step 2: 今天的新集 —— 以今天为锚点动态推算
+  if (!schedule[today]) schedule[today] = [];
 
-  for (let i = 0; i < daysAhead; i++) {
-    const d = addDays(startDate, i);
-    if (d < today) continue; // skip past dates for new ep assignment
-    if (!schedule[d]) schedule[d] = [];
+  // 今天已打卡的新集（第一次打卡日期 = 今天）—— 无论如何必须全部显示
+  const todayNewChecked = allEps.filter(ep => {
+    const log = curWatchLog()[ep.id] || [];
+    return log.length >= 1 && log[0] === today;
+  });
+  todayNewChecked.forEach(ep => {
+    if (!schedule[today].find(x => x.epId === ep.id)) {
+      schedule[today].push({ epId: ep.id, isNew: true, reviewNum: 1 });
+    }
+  });
 
-    // Count how many slots are used by reviews
-    const reviewCount = schedule[d].filter(x => !x.isNew).length;
-    const newSlots = Math.max(0, Math.min(dailyNew, dailyMax - reviewCount));
-
-    for (let s = 0; s < newSlots && epIdx < allEps.length; s++) {
-      const ep = allEps[epIdx];
-      if (getWatchCount(ep.id) === 0) {
-        schedule[d].push({ epId: ep.id, isNew: true, reviewNum: 1 });
-        epIdx++;
-      } else {
-        epIdx++;
-        s--; // retry
+  // 今天已打卡的复习集 —— 同样必须全部显示（Step 1 可能因 dailyMax 没排进来）
+  allEps.forEach(ep => {
+    const log = curWatchLog()[ep.id] || [];
+    const count = log.length;
+    // 今天打卡了，且不是第一次（是复习），且还没在今天的 schedule 里
+    if (count >= 2 && log.includes(today) && log[0] !== today) {
+      if (!schedule[today].find(x => x.epId === ep.id)) {
+        schedule[today].push({ epId: ep.id, isNew: false, reviewNum: count });
       }
+    }
+  });
+
+  // 计算今天已占用的名额（已打卡的新集 + 已安排的复习集）
+  const todayCheckedNewCount = todayNewChecked.length;
+  const todayReviewCount = schedule[today].filter(x => !x.isNew).length;
+  // 今天还能安排的新集名额（未打卡的新集）
+  const totalUsed = schedule[today].length;
+  const newSlots = Math.max(0, Math.min(dailyNew, dailyMax - todayReviewCount) - todayCheckedNewCount);
+
+  // 还没开始学的集，按顺序补满今天的新集名额（未打卡部分）
+  const unstartedEps = allEps.filter(ep => getWatchCount(ep.id) === 0);
+  for (let i = 0; i < newSlots && i < unstartedEps.length; i++) {
+    const ep = unstartedEps[i];
+    if (!schedule[today].find(x => x.epId === ep.id)) {
+      schedule[today].push({ epId: ep.id, isNew: true, reviewNum: 1 });
+    }
+  }
+
+  // Step 3: 未来几天的新集预览（用于计划页展示）
+  // 未来从 unstartedEps 的第 (todayCheckedNewCount + newSlots) 个开始继续排
+  let futureEpIdx = todayCheckedNewCount + newSlots;
+  for (let i = 1; i < daysAhead; i++) {
+    const d = addDays(today, i);
+    if (!schedule[d]) schedule[d] = [];
+    const dayReviewCount = schedule[d].filter(x => !x.isNew).length;
+    const dayNewSlots = Math.max(0, Math.min(dailyNew, dailyMax - dayReviewCount));
+    for (let s = 0; s < dayNewSlots && futureEpIdx < unstartedEps.length; s++) {
+      const ep = unstartedEps[futureEpIdx];
+      schedule[d].push({ epId: ep.id, isNew: true, reviewNum: 1 });
+      futureEpIdx++;
     }
   }
 
   return schedule;
+}
+
+// 直接获取今天的任务列表（快捷方法）
+// Returns: [{epId, isNew, reviewNum}]
+function getTodayTasks() {
+  const schedule = buildSchedule(60);
+  return schedule[todayStr()] || [];
 }
 
 
@@ -1404,7 +1448,21 @@ function renderPlan() {
       weekHtml = '';
     }
 
-    const chips = items.map(item => {
+    const checkedEpIds = curCheckins()[d] || [];
+    const checkedCount = checkedEpIds.length;
+
+    // 过去日期：用实际打卡记录展示；今天/未来：用 schedule 展示
+    let displayItems = items;
+    if (isPast && checkedCount > 0) {
+      // 过去有打卡记录，展示实际打卡的集
+      displayItems = checkedEpIds.map(epId => {
+        const log = (curWatchLog()[epId] || []);
+        const isFirstTime = log[0] === d;
+        return { epId, isNew: isFirstTime, reviewNum: log.indexOf(d) + 1 };
+      });
+    }
+
+    const chips = displayItems.map(item => {
       const ep = currentShow().episodes.find(e => e.id === item.epId);
       if (!ep) return '';
       const isNew = item.isNew;
@@ -1413,9 +1471,15 @@ function renderPlan() {
       </span>`;
     }).join('');
 
-    const checkedCount = (curCheckins()[d] || []).length;
-    const totalCount = items.length;
-    const doneIndicator = checkedCount > 0 ? `<span style="font-size:11px;color:var(--green);margin-left:4px">✓${checkedCount}/${totalCount}</span>` : '';
+    const totalCount = isToday ? items.length : (isPast ? checkedCount : items.length);
+    const doneIndicator = (isToday && checkedCount > 0)
+      ? `<span style="font-size:11px;color:var(--green);margin-left:4px">✓${checkedCount}/${totalCount}</span>`
+      : '';
+
+    // 空状态文案
+    let emptyMsg = '<span style="font-size:12px;color:#ccc">休息日 🌙</span>';
+    if (isPast && checkedCount === 0) emptyMsg = '<span style="font-size:12px;color:#ffb74d">未打卡 😴</span>';
+    if (isToday && items.length === 0) emptyMsg = '<span style="font-size:12px;color:#81C784">全部完成 🎉</span>';
 
     weekHtml += `
       <div class="plan-day-card ${isToday?'today-plan':''} ${isPast?'past-plan':''}">
@@ -1425,8 +1489,8 @@ function renderPlan() {
           ${isToday?'<div style="font-size:9px;color:#F9A825;font-weight:700">今天</div>':''}
         </div>
         <div class="plan-eps">
-          ${items.length === 0
-            ? '<span style="font-size:12px;color:#ccc">休息日 🌙</span>'
+          ${displayItems.length === 0
+            ? emptyMsg
             : chips + doneIndicator
           }
         </div>
@@ -1593,7 +1657,6 @@ function renderCalendar() {
 
 // ----- SETTINGS -----
 function renderSettings() {
-  document.getElementById('startDateInput').value = state.settings.startDate || todayStr();
   document.getElementById('dailyNewInput').value = state.settings.dailyNew || 2;
   document.getElementById('dailyMaxInput').value = state.settings.dailyMax || 4;
   renderShowManage();
@@ -1603,7 +1666,6 @@ function renderSettings() {
 // ACTIONS
 // ============================================================
 function saveSettings() {
-  state.settings.startDate = document.getElementById('startDateInput').value;
   state.settings.dailyNew = parseInt(document.getElementById('dailyNewInput').value);
   state.settings.dailyMax = parseInt(document.getElementById('dailyMaxInput').value);
   saveState();

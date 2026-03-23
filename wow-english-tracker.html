@@ -352,6 +352,78 @@
   .watch-dot.done { background: #FFD600; border-color: #FFD600; }
   .watch-dot.done::after { content: '✓'; color: #5D4037; font-weight: 700; }
 
+  /* ===== 历史补打卡 ===== */
+  .ep-row { cursor: pointer; transition: background 0.15s; }
+  .ep-row:active { background: #FFF9E6; }
+  .ep-history-btn {
+    flex-shrink: 0; padding: 4px 9px; border-radius: 8px;
+    border: 1.5px solid #FFD600; background: #fff;
+    font-size: 11px; font-weight: 700; color: #F9A825;
+    cursor: pointer; touch-action: manipulation; white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .ep-history-btn:active { background: #FFF9C4; transform: scale(0.95); }
+  .ep-history-btn.mastered { border-color: #A5D6A7; color: #4CAF50; }
+
+  /* 补打卡弹窗 */
+  .history-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.45);
+    z-index: 500; display: flex; align-items: flex-end;
+    opacity: 0; pointer-events: none; transition: opacity 0.25s;
+  }
+  .history-modal-overlay.show { opacity: 1; pointer-events: auto; }
+  .history-modal-box {
+    background: #fff; border-radius: 24px 24px 0 0;
+    width: 100%; padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    transform: translateY(100%); transition: transform 0.3s cubic-bezier(.4,0,.2,1);
+    max-height: 80vh; overflow-y: auto;
+  }
+  .history-modal-overlay.show .history-modal-box { transform: translateY(0); }
+  .history-modal-title {
+    font-size: 16px; font-weight: 800; color: var(--text);
+    margin-bottom: 4px;
+  }
+  .history-modal-sub {
+    font-size: 12px; color: var(--text-secondary); margin-bottom: 16px;
+  }
+  .history-date-grid {
+    display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px;
+    margin-bottom: 16px;
+  }
+  .history-date-btn {
+    aspect-ratio: 1; border-radius: 10px; border: 1.5px solid #e8e0d8;
+    background: #FAFAF8; font-size: 12px; font-weight: 600;
+    color: var(--text); cursor: pointer; display: flex;
+    flex-direction: column; align-items: center; justify-content: center;
+    gap: 1px; touch-action: manipulation; transition: all 0.15s;
+    padding: 2px;
+  }
+  .history-date-btn .hd-day { font-size: 15px; font-weight: 800; line-height: 1; }
+  .history-date-btn .hd-dow { font-size: 9px; color: var(--text-secondary); }
+  .history-date-btn:active { transform: scale(0.93); }
+  .history-date-btn.checked { background: #FFD600; border-color: #FFD600; color: #5D4037; }
+  .history-date-btn.checked .hd-dow { color: #7D5A00; }
+  .history-date-btn.today-btn { border-color: #FF9800; border-width: 2px; }
+  .history-watch-row {
+    display: flex; align-items: center; gap: 10px;
+    background: #FFF9E6; border-radius: 12px; padding: 12px 14px;
+    margin-bottom: 14px;
+  }
+  .history-watch-dots { display: flex; gap: 5px; }
+  .history-watch-dot {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 1.5px solid #ddd; background: #fff;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px; cursor: pointer; transition: all 0.15s;
+    touch-action: manipulation;
+  }
+  .history-watch-dot.done { background: #FFD600; border-color: #FFD600; color: #5D4037; font-weight: 700; }
+  .history-watch-dot:active { transform: scale(0.88); }
+  .history-section-label {
+    font-size: 12px; font-weight: 700; color: var(--text-secondary);
+    margin-bottom: 8px; margin-top: 4px;
+  }
+
   /* ===== Calendar ===== */
   .calendar-section { background: #fff; border-radius: var(--radius); padding: 16px; margin-bottom: 14px; box-shadow: var(--card-shadow); }
   .calendar-section h3 { font-size: 14px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 6px; }
@@ -795,6 +867,28 @@
       <button class="btn-danger" onclick="resetData()">🔄 重置所有数据</button>
     </div>
     <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+  </div>
+</div>
+
+<!-- ===== 历史补打卡弹窗 ===== -->
+<div class="history-modal-overlay" id="historyModal" onclick="closeHistoryModal(event)">
+  <div class="history-modal-box">
+    <div class="history-modal-title" id="historyModalTitle">📺 第01集</div>
+    <div class="history-modal-sub" id="historyModalSub">选择观看日期，可多选</div>
+
+    <!-- 当前打卡状态 -->
+    <div class="history-watch-row">
+      <div style="flex:1">
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:6px">已打卡次数（共4次完成掌握）</div>
+        <div class="history-watch-dots" id="historyWatchDots"></div>
+      </div>
+    </div>
+
+    <!-- 日期选择 -->
+    <div class="history-section-label">📅 选择历史观看日期（最近30天）</div>
+    <div class="history-date-grid" id="historyDateGrid"></div>
+
+    <button class="btn-primary" onclick="closeHistoryModal(null)" style="margin-top:4px">✅ 完成</button>
   </div>
 </div>
 
@@ -1522,18 +1616,20 @@ function renderEpisodes() {
 
     const rows = eps.map(ep => {
       const count = getWatchCount(ep.id);
+      const mastered = count >= 4;
       const dots = [0,1,2,3].map(i =>
         `<div class="watch-dot ${i < count ? 'done' : ''}"></div>`
       ).join('');
+      const btnLabel = mastered ? '✓ 已掌握' : (count > 0 ? `补打卡 ${count}/4` : '补打卡');
       return `
-        <div class="ep-row">
+        <div class="ep-row" onclick="openHistoryModal(${ep.id})">
           <div class="ep-row-num">${ep.num}</div>
           <div class="ep-row-title">
-            <div class="en">${ep.en.length > 28 ? ep.en.substring(0,28)+'…' : ep.en}</div>
+            <div class="en">${ep.en.length > 24 ? ep.en.substring(0,24)+'…' : ep.en}</div>
             <div class="zh">${ep.zh}</div>
           </div>
-          <span class="ep-row-type ${ep.type==='story'?'type-story':'type-song'}">${ep.type==='story'?'故事':'歌曲'}</span>
           <div class="ep-row-watches">${dots}</div>
+          <button class="ep-history-btn ${mastered?'mastered':''}" onclick="event.stopPropagation();openHistoryModal(${ep.id})">${btnLabel}</button>
         </div>`;
     }).join('');
 
@@ -1660,6 +1756,107 @@ function renderSettings() {
   document.getElementById('dailyNewInput').value = state.settings.dailyNew || 2;
   document.getElementById('dailyMaxInput').value = state.settings.dailyMax || 4;
   renderShowManage();
+}
+
+// ============================================================
+// 历史补打卡
+// ============================================================
+let _historyEpId = null; // 当前弹窗操作的集 id
+
+function openHistoryModal(epId) {
+  _historyEpId = epId;
+  const ep = currentShow().episodes.find(e => e.id === epId);
+  if (!ep) return;
+
+  // 标题
+  document.getElementById('historyModalTitle').textContent = `📺 第${ep.num}集 · ${ep.zh}`;
+  document.getElementById('historyModalSub').textContent = ep.en;
+
+  // 渲染弹窗内容
+  renderHistoryModal();
+
+  document.getElementById('historyModal').classList.add('show');
+}
+
+function renderHistoryModal() {
+  const epId = _historyEpId;
+  if (!epId) return;
+  const log = (curWatchLog()[epId] || []).slice().sort();
+  const count = log.length;
+  const today = todayStr();
+
+  // 打卡次数圆点（可点击取消）
+  const dotsEl = document.getElementById('historyWatchDots');
+  dotsEl.innerHTML = [0,1,2,3].map(i => {
+    const dateLabel = log[i] ? `<div style="font-size:8px;margin-top:2px;color:#7D5A00">${log[i].slice(5)}</div>` : '';
+    return `<div style="text-align:center">
+      <div class="history-watch-dot ${i < count ? 'done' : ''}"
+        onclick="${i < count ? `historyRemoveDate('${log[i]}')` : ''}"
+        title="${log[i] || '未打卡'}">${i < count ? '✓' : ''}</div>
+      ${dateLabel}
+    </div>`;
+  }).join('');
+
+  // 日期网格：最近30天（今天 + 过去29天）
+  const gridEl = document.getElementById('historyDateGrid');
+  const days = [];
+  for (let i = 29; i >= 0; i--) days.push(addDays(today, -i));
+
+  const DOW = ['日','一','二','三','四','五','六'];
+  gridEl.innerHTML = days.map(d => {
+    const isChecked = log.includes(d);
+    const isToday = d === today;
+    const dayObj = parseDate(d);
+    const dayNum = dayObj.getDate();
+    const dow = DOW[dayObj.getDay()];
+    // 已打满4次且这天不在记录里，不可再选
+    const disabled = count >= 4 && !isChecked;
+    return `<button
+      class="history-date-btn ${isChecked ? 'checked' : ''} ${isToday ? 'today-btn' : ''}"
+      onclick="historyToggleDate('${d}')"
+      ${disabled ? 'disabled style="opacity:0.3;cursor:not-allowed"' : ''}
+    >
+      <span class="hd-day">${dayNum}</span>
+      <span class="hd-dow">${isToday ? '今' : dow}</span>
+    </button>`;
+  }).join('');
+}
+
+function historyToggleDate(dateStr) {
+  const epId = _historyEpId;
+  if (!epId) return;
+  const wl = curWatchLog();
+  const ci = curCheckins();
+  const log = wl[epId] || [];
+
+  if (log.includes(dateStr)) {
+    // 取消这天的打卡
+    wl[epId] = log.filter(d => d !== dateStr).sort();
+    if (ci[dateStr]) ci[dateStr] = ci[dateStr].filter(id => id !== epId);
+    showToast(`已取消 ${dateStr.slice(5)} 的打卡`);
+  } else {
+    // 添加这天的打卡
+    if (log.length >= 4) { showToast('该集已完成4次，无法再添加'); return; }
+    wl[epId] = [...log, dateStr].sort();
+    if (!ci[dateStr]) ci[dateStr] = [];
+    if (!ci[dateStr].includes(epId)) ci[dateStr].push(epId);
+    showToast(`✅ 已补打卡 ${dateStr.slice(5)}`);
+  }
+
+  saveState();
+  renderHistoryModal(); // 刷新弹窗内容
+  renderAll();          // 联动今日计划、统计等所有页面
+}
+
+function historyRemoveDate(dateStr) {
+  historyToggleDate(dateStr); // 复用同一逻辑
+}
+
+function closeHistoryModal(e) {
+  // 点击遮罩关闭（不点到内容框）
+  if (e && e.target !== document.getElementById('historyModal')) return;
+  document.getElementById('historyModal').classList.remove('show');
+  _historyEpId = null;
 }
 
 // ============================================================
